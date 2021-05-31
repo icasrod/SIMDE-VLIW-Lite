@@ -99,150 +99,195 @@ public class VLIWMachine {
 		System.out.print(mem);
 		
 	}
+	
+	private void setOperandValues(LongInstructionOperation op) {
+		double []values = new double[2];
+		final Instruction inst = op.getInstruction();
+		switch (inst.getOpcode()) {
+		case ADD:
+		case SUB:
+		case AND:
+		case NOR:
+		case OR:
+		case XOR:
+		case MULT:
+		case SLLV:
+		case SRLV:
+			values[0] = gpr.read(inst.getOp()[1]);
+			values[1] = gpr.read(inst.getOp()[2]);
+			break;
+		case ADDF:
+		case SUBF:
+		case MULTF:
+			values[0] = fpr.read(inst.getOp()[1]);
+			values[1] = fpr.read(inst.getOp()[2]);
+			break;
+		case ADDI:
+			values[0] = gpr.read(inst.getOp()[1]);
+			values[1] = inst.getOp()[2];
+			break;
+		case BEQ:
+		case BGT:
+		case BNE:
+			values[0] = gpr.read(inst.getOp()[0]);
+			values[1] = gpr.read(inst.getOp()[1]);
+			break;
+		case LF:
+		case LW:
+			values[0] = inst.getOp()[1] + gpr.read(inst.getOp()[2]);
+			values[1] = 0.0;
+			break;
+		case SF:
+			values[0] = inst.getOp()[1] + gpr.read(inst.getOp()[2]);
+			values[1] = fpr.read(inst.getOp()[0]);
+			break;
+		case SW:
+			values[0] = inst.getOp()[1] + gpr.read(inst.getOp()[2]);
+			values[1] = gpr.read(inst.getOp()[0]);
+			break;
+		default:
+			break;
+		
+		}
+		op.setOperandValues(values);
+	}
+	
 	private int execute(LongInstructionOperation op, int pc) {
 		int op1, op2;
 		double opFP1, opFP2;
 		final Instruction inst = op.getInstruction();
 		switch (inst.getOpcode()) {
 		case ADD:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 + op2);
 			pc++;
 			break;
 		case ADDF:
-			opFP1 = fpr.read(inst.getOp()[1]);
-			opFP2 = fpr.read(inst.getOp()[2]);
+			opFP1 = op.getOperand1Value();
+			opFP2 = op.getOperand2Value();
 			fpr.write(inst.getOp()[0], opFP1 + opFP2);
 			pc++;
 			break;
 		case ADDI:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = inst.getOp()[2];
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 + op2);
 			pc++;
 			break;
 		case AND:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 & op2);
 			pc++;
 			break;
 		case BEQ:
-			op1 = gpr.read(inst.getOp()[0]);
-			op2 = gpr.read(inst.getOp()[1]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			if (op1 == op2)
 				pc = inst.getOp()[2];
 			else
 				pc++;
 			break;
 		case BGT:
-			op1 = gpr.read(inst.getOp()[0]);
-			op2 = gpr.read(inst.getOp()[1]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			if (op1 > op2)
 				pc = inst.getOp()[2];
 			else
 				pc++;
 			break;
 		case BNE:
-			op1 = gpr.read(inst.getOp()[0]);
-			op2 = gpr.read(inst.getOp()[1]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			if (op1 != op2)
 				pc = ((LongInstructionJumpOperation)op).getDestination();
 			else
 				pc++;
 			break;
 		case LF:
-			op1 = inst.getOp()[1];
-			op2 = gpr.read(inst.getOp()[2]);
 			try {
-				fpr.write(inst.getOp()[0], mem.read(op1 + op2));
+				fpr.write(inst.getOp()[0], mem.read((int)op.getOperand1Value()));
 			} catch (SIMDEException e) {
 				e.printStackTrace();
 			}
 			pc++;
 			break;
 		case LW:
-			op1 = inst.getOp()[1];
-			op2 = gpr.read(inst.getOp()[2]);
 			try {
-				gpr.write(inst.getOp()[0], (int)mem.read(op1 + op2));
+				gpr.write(inst.getOp()[0], (int)mem.read((int)op.getOperand1Value()));
 			} catch (SIMDEException e) {
 				e.printStackTrace();
 			}
 			pc++;
 			break;
 		case MULT:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 * op2);
 			pc++;
 			break;
 		case MULTF:
-			opFP1 = fpr.read(inst.getOp()[1]);
-			opFP2 = fpr.read(inst.getOp()[2]);
+			opFP1 = op.getOperand1Value();
+			opFP2 = op.getOperand2Value();
 			fpr.write(inst.getOp()[0], opFP1 * opFP2);
 			pc++;
 			break;
 		case NOR:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], ~(op1 | op2));
 			pc++;
 			break;
 		case OR:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 | op2);
 			pc++;
 			break;
 		case SF:
-			op1 = inst.getOp()[1];
-			op2 = gpr.read(inst.getOp()[2]);
 			try {
-				mem.write(op1 + op2, fpr.read(inst.getOp()[0]));
+				mem.write((int)op.getOperand1Value(), op.getOperand2Value());
 			} catch (SIMDEException e) {
 				e.printStackTrace();
 			}
 			pc++;
 			break;
 		case SLLV:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 << op2);
 			pc++;
 			break;
 		case SRLV:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 >> op2);
 			pc++;
 			break;
 		case SUB:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 - op2);
 			pc++;
 			break;
 		case SUBF:
-			opFP1 = fpr.read(inst.getOp()[1]);
-			opFP2 = fpr.read(inst.getOp()[2]);
+			opFP1 = op.getOperand1Value();
+			opFP2 = op.getOperand2Value();
 			fpr.write(inst.getOp()[0], opFP1 - opFP2);
 			pc++;
 			break;
 		case SW:
-			op1 = inst.getOp()[1];
-			op2 = gpr.read(inst.getOp()[2]);
 			try {
-				mem.write(op1 + op2, gpr.read(inst.getOp()[0]));
+				mem.write((int)op.getOperand1Value(), (int)op.getOperand2Value());
 			} catch (SIMDEException e) {
 				e.printStackTrace();
 			}
 			pc++;
 			break;
 		case XOR:
-			op1 = gpr.read(inst.getOp()[1]);
-			op2 = gpr.read(inst.getOp()[2]);
+			op1 = (int)op.getOperand1Value();
+			op2 = (int)op.getOperand2Value();
 			gpr.write(inst.getOp()[0], op1 ^ op2);
 			pc++;
 			break;
@@ -267,6 +312,7 @@ public class VLIWMachine {
 			for (LongInstructionOperation op : opers) {
 				if (debugMode)
 					System.out.println("\tSTART_EXE:" + op.getInstruction().getId());
+				setOperandValues(op);
 				actionList.add(new Action(cycle + op.getInstruction().getOpcode().getFU().getLatency() - 1, op));
 			}
 			// Ejecutamos todas las intrucciones planificadas para este ciclo

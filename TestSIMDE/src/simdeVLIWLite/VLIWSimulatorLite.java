@@ -33,9 +33,9 @@ public class VLIWSimulatorLite {
 	public static void main(String[] args) {
 		boolean debug = true;
 //		Code.debugFile("G://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle.pla");
-		Code code = Code.loadCode("G://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle4.pla");
+		Code code = Code.loadCode("G://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle.pla");
 		TreeMap<FunctionalUnit, Integer> configuration = getConfiguration("2,2,2,2,2,1");
-		VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, "G://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle4.vliw");
+		VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, "G://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle.vliw");
 		System.out.println(vliwcode);
 		VLIWMachine machine = new VLIWMachine(configuration);
 		machine.loadMemoryAndRegisters("G://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle2.mem");

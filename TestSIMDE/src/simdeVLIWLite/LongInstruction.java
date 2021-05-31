@@ -72,6 +72,7 @@ public class LongInstruction {
 		private final int pred;
 		/** La instrucción a ejecutar */
 		private final Instruction inst;
+		private final double[]operandValues;
 		
 		/**
 		 * @param fuType
@@ -82,6 +83,7 @@ public class LongInstruction {
 			super();
 			this.inst = inst;
 			this.pred = pred;
+			this.operandValues = new double[2];
 		}
 
 		/**
@@ -96,6 +98,19 @@ public class LongInstruction {
 		 */
 		public int getPred() {
 			return pred;
+		}
+		
+		public double getOperand1Value() {
+			return operandValues[0];
+		}
+		
+		public double getOperand2Value() {
+			return operandValues[1];			
+		}
+		
+		public void setOperandValues(double[] values) {
+			operandValues[0] = values[0];
+			operandValues[1] = values[1];
 		}
 	}
 	

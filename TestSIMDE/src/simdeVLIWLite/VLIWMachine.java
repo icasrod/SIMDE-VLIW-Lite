@@ -25,6 +25,7 @@ public class VLIWMachine {
 	private final GPRegisterBank gpr;
 	private final FPRegisterBank fpr;
 	private final Memory mem;
+	private final PredicateRegisterBank pred;
 
 	private final PriorityQueue<Action> actionList;
 	private boolean debugMode = false;
@@ -36,6 +37,7 @@ public class VLIWMachine {
 		gpr = new GPRegisterBank(NREG);
 		fpr = new FPRegisterBank(NREG);
 		mem = new Memory(NMEM);
+		pred = new PredicateRegisterBank(NREG);
 		actionList = new PriorityQueue<>();
 	}
 
@@ -184,26 +186,23 @@ public class VLIWMachine {
 		case BEQ:
 			op1 = (int)op.getOperand1Value();
 			op2 = (int)op.getOperand2Value();
-			if (op1 == op2)
-				pc = inst.getOp()[2];
-			else
-				pc++;
+			pc = (op1 == op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+			pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 == op2));
+			pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 != op2));
 			break;
 		case BGT:
 			op1 = (int)op.getOperand1Value();
 			op2 = (int)op.getOperand2Value();
-			if (op1 > op2)
-				pc = inst.getOp()[2];
-			else
-				pc++;
+			pc = (op1 > op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+			pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 > op2));
+			pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 <= op2));
 			break;
 		case BNE:
 			op1 = (int)op.getOperand1Value();
 			op2 = (int)op.getOperand2Value();
-			if (op1 != op2)
-				pc = ((LongInstructionJumpOperation)op).getDestination();
-			else
-				pc++;
+			pc = (op1 != op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+			pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 != op2));
+			pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 == op2));
 			break;
 		case LF:
 			try {
@@ -311,7 +310,7 @@ public class VLIWMachine {
 			// Planificamos las instrucciones que deben ejecutarse
 			for (LongInstructionOperation op : opers) {
 				if (debugMode)
-					System.out.println("\tSTART_EXE:" + op.getInstruction().getId());
+					System.out.println("\tSTART_EXE:\t" + op.getInstruction());
 				setOperandValues(op);
 				actionList.add(new Action(cycle + op.getInstruction().getOpcode().getFU().getLatency() - 1, op));
 			}
@@ -323,9 +322,15 @@ public class VLIWMachine {
 					noMore = true;
 				else {
 					final Action action = actionList.poll();
-					newPC = execute(action.getOper(),pc);
-					if (debugMode)
-						System.out.println("\tEND_EXE:" + action.getOper().getInstruction().getId());
+					if (pred.read(action.getOper().getPred())) {
+						newPC = execute(action.getOper(),pc);
+						if (debugMode)
+							System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
+					}
+					else {
+						if (debugMode)
+							System.out.println("\tCANCEL_EXE:\t" + action.getOper().getInstruction());						
+					}
 				}
 			}
 			pc = newPC;
@@ -336,20 +341,35 @@ public class VLIWMachine {
 		while (!actionList.isEmpty()) {
 			Action action = actionList.poll();
 			while (cycle < action.getCycle()) 
-				System.out.println("CYCLE: " + (cycle++) + "\tPC: " + (pc++));				
+				System.out.println("CYCLE: " + (cycle++) + "\tPC: " + (pc++));
+			int newPC = pc + 1;
 			// Ejecutamos todas las intrucciones planificadas para este ciclo, incluida la primera que ya separamos
-			int newPC = execute(action.getOper(), pc);
+			if (pred.read(action.getOper().getPred())) {
+				newPC = execute(action.getOper(),pc);
+				if (debugMode)
+					System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
+			}
+			else {
+				if (debugMode)
+					System.out.println("\tCANCEL_EXE:\t" + action.getOper().getInstruction());						
+			}
 			if (debugMode)
-				System.out.println("\tEND_EXE:" + action.getOper().getInstruction().getId());
+				System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
 			boolean noMore = false;			
 			while (!actionList.isEmpty() && !noMore) {
 				if (actionList.peek().getCycle() != cycle)
 					noMore = true;
 				else {
 					action = actionList.poll();
-					newPC = execute(action.getOper(),pc);
-					if (debugMode)
-						System.out.println("\tEND_EXE:" + action.getOper().getInstruction().getId());
+					if (pred.read(action.getOper().getPred())) {
+						newPC = execute(action.getOper(),pc);
+						if (debugMode)
+							System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
+					}
+					else {
+						if (debugMode)
+							System.out.println("\tCANCEL_EXE:\t" + action.getOper().getInstruction());						
+					}
 				}
 			}
 			pc = newPC;

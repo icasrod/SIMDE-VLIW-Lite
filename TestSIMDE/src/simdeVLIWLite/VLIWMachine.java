@@ -155,226 +155,215 @@ public class VLIWMachine {
 	}
 	
 	private int execute(LongInstructionOperation op, int pc) {
-		int op1, op2;
-		double opFP1, opFP2;
-		final Instruction inst = op.getInstruction();
-		switch (inst.getOpcode()) {
-		case ADD:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 + op2);
-			pc++;
-			break;
-		case ADDF:
-			opFP1 = op.getOperand1Value();
-			opFP2 = op.getOperand2Value();
-			fpr.write(inst.getOp()[0], opFP1 + opFP2);
-			pc++;
-			break;
-		case ADDI:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 + op2);
-			pc++;
-			break;
-		case AND:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 & op2);
-			pc++;
-			break;
-		case BEQ:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			pc = (op1 == op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
-			pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 == op2));
-			pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 != op2));
-			break;
-		case BGT:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			pc = (op1 > op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
-			pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 > op2));
-			pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 <= op2));
-			break;
-		case BNE:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			pc = (op1 != op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
-			pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 != op2));
-			pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 == op2));
-			break;
-		case LF:
-			try {
-				fpr.write(inst.getOp()[0], mem.read((int)op.getOperand1Value()));
-			} catch (SIMDEException e) {
-				e.printStackTrace();
+		if (pred.read(op.getPred())) {
+			int op1, op2;
+			double opFP1, opFP2;
+			final Instruction inst = op.getInstruction();
+			switch (inst.getOpcode()) {
+			case ADD:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 + op2);
+				pc++;
+				break;
+			case ADDF:
+				opFP1 = op.getOperand1Value();
+				opFP2 = op.getOperand2Value();
+				fpr.write(inst.getOp()[0], opFP1 + opFP2);
+				pc++;
+				break;
+			case ADDI:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 + op2);
+				pc++;
+				break;
+			case AND:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 & op2);
+				pc++;
+				break;
+			case BEQ:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				pc = (op1 == op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 == op2));
+				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 != op2));
+				break;
+			case BGT:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				pc = (op1 > op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 > op2));
+				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 <= op2));
+				break;
+			case BNE:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				pc = (op1 != op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 != op2));
+				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 == op2));
+				break;
+			case LF:
+				try {
+					fpr.write(inst.getOp()[0], mem.read((int)op.getOperand1Value()));
+				} catch (SIMDEException e) {
+					e.printStackTrace();
+				}
+				pc++;
+				break;
+			case LW:
+				try {
+					gpr.write(inst.getOp()[0], (int)mem.read((int)op.getOperand1Value()));
+				} catch (SIMDEException e) {
+					e.printStackTrace();
+				}
+				pc++;
+				break;
+			case MULT:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 * op2);
+				pc++;
+				break;
+			case MULTF:
+				opFP1 = op.getOperand1Value();
+				opFP2 = op.getOperand2Value();
+				fpr.write(inst.getOp()[0], opFP1 * opFP2);
+				pc++;
+				break;
+			case NOR:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], ~(op1 | op2));
+				pc++;
+				break;
+			case OR:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 | op2);
+				pc++;
+				break;
+			case SF:
+				try {
+					mem.write((int)op.getOperand1Value(), op.getOperand2Value());
+				} catch (SIMDEException e) {
+					e.printStackTrace();
+				}
+				pc++;
+				break;
+			case SLLV:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 << op2);
+				pc++;
+				break;
+			case SRLV:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 >> op2);
+				pc++;
+				break;
+			case SUB:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 - op2);
+				pc++;
+				break;
+			case SUBF:
+				opFP1 = op.getOperand1Value();
+				opFP2 = op.getOperand2Value();
+				fpr.write(inst.getOp()[0], opFP1 - opFP2);
+				pc++;
+				break;
+			case SW:
+				try {
+					mem.write((int)op.getOperand1Value(), (int)op.getOperand2Value());
+				} catch (SIMDEException e) {
+					e.printStackTrace();
+				}
+				pc++;
+				break;
+			case XOR:
+				op1 = (int)op.getOperand1Value();
+				op2 = (int)op.getOperand2Value();
+				gpr.write(inst.getOp()[0], op1 ^ op2);
+				pc++;
+				break;
+			default:
+				pc++;
+				break;
+			
 			}
-			pc++;
-			break;
-		case LW:
-			try {
-				gpr.write(inst.getOp()[0], (int)mem.read((int)op.getOperand1Value()));
-			} catch (SIMDEException e) {
-				e.printStackTrace();
-			}
-			pc++;
-			break;
-		case MULT:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 * op2);
-			pc++;
-			break;
-		case MULTF:
-			opFP1 = op.getOperand1Value();
-			opFP2 = op.getOperand2Value();
-			fpr.write(inst.getOp()[0], opFP1 * opFP2);
-			pc++;
-			break;
-		case NOR:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], ~(op1 | op2));
-			pc++;
-			break;
-		case OR:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 | op2);
-			pc++;
-			break;
-		case SF:
-			try {
-				mem.write((int)op.getOperand1Value(), op.getOperand2Value());
-			} catch (SIMDEException e) {
-				e.printStackTrace();
-			}
-			pc++;
-			break;
-		case SLLV:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 << op2);
-			pc++;
-			break;
-		case SRLV:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 >> op2);
-			pc++;
-			break;
-		case SUB:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 - op2);
-			pc++;
-			break;
-		case SUBF:
-			opFP1 = op.getOperand1Value();
-			opFP2 = op.getOperand2Value();
-			fpr.write(inst.getOp()[0], opFP1 - opFP2);
-			pc++;
-			break;
-		case SW:
-			try {
-				mem.write((int)op.getOperand1Value(), (int)op.getOperand2Value());
-			} catch (SIMDEException e) {
-				e.printStackTrace();
-			}
-			pc++;
-			break;
-		case XOR:
-			op1 = (int)op.getOperand1Value();
-			op2 = (int)op.getOperand2Value();
-			gpr.write(inst.getOp()[0], op1 ^ op2);
-			pc++;
-			break;
-		default:
-			pc++;
-			break;
-		
+			if (debugMode)
+				System.out.println("\tEND_EXE:\t" + op.getInstruction());
+		}
+		else if (debugMode) {
+				System.out.println("\tCANCEL_EXE:\t" + op.getInstruction());						
 		}
 		return pc;
 	}
+
+	/**
+	 * Planifica las operaciones para que se terminen de ejecutar cuando corresponda
+	 * TODO: De momento, no tiene en cuenta fallos de caché
+	 * @param inst Instrucción larga que contiene las operaciones a planificar
+	 * @param cycle Ciclo de reloj en que se está comenzando la ejecución de esta instrucción larga
+	 */
+	private void schedule(LongInstruction inst, int cycle) {
+		final ArrayList<LongInstructionOperation> opers = inst.getValidOperations();
+		for (LongInstructionOperation op : opers) {
+			if (debugMode)
+				System.out.println("\tSTART_EXE:\t" + op.getInstruction());
+			setOperandValues(op);
+			actionList.add(new Action(cycle + op.getInstruction().getOpcode().getFU().getLatency() - 1, op));
+		}
+	}
 	
+	private ArrayList<Action> getValidActions(int cycle) {
+		final ArrayList<Action> list = new ArrayList<>();
+		boolean more = true;
+		while (more) {
+			if (actionList.isEmpty())
+				more = false;
+			else {
+				if (actionList.peek().getCycle() == cycle)
+					list.add(actionList.poll());
+				else
+					more = false;
+			}
+		}
+		return list;
+	}
 	public int execute(VLIWCode code) {
 		int cycle = 0;
 		int pc = 0;
+		boolean stop = false;
 		
-		LongInstruction inst = code.getInstruction(pc); 
-		while (inst != null) {
+		if (debugMode)
+			System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
+		schedule(code.getInstruction(pc), cycle);
+		do {
+			int newPC = pc + 1;
+			// Se ejecutan las operaciones correspondientes a este ciclo
+			final ArrayList<Action> actions = getValidActions(cycle);
+			for (Action action : actions) {
+				newPC = execute(action.getOper(), pc);
+			}
+			// Avanzamos el PC y el ciclo
+			cycle++;
+			pc = newPC;
 			if (debugMode)
 				System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
-			final ArrayList<LongInstructionOperation> opers = inst.getValidOperations();
-			// Planificamos las instrucciones que deben ejecutarse
-			for (LongInstructionOperation op : opers) {
-				if (debugMode)
-					System.out.println("\tSTART_EXE:\t" + op.getInstruction());
-				setOperandValues(op);
-				actionList.add(new Action(cycle + op.getInstruction().getOpcode().getFU().getLatency() - 1, op));
-			}
-			// Ejecutamos todas las intrucciones planificadas para este ciclo
-			boolean noMore = false;
-			int newPC = pc + 1;
-			while (!actionList.isEmpty() && !noMore) {
-				if (actionList.peek().getCycle() != cycle)
-					noMore = true;
-				else {
-					final Action action = actionList.poll();
-					if (pred.read(action.getOper().getPred())) {
-						newPC = execute(action.getOper(),pc);
-						if (debugMode)
-							System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
-					}
-					else {
-						if (debugMode)
-							System.out.println("\tCANCEL_EXE:\t" + action.getOper().getInstruction());						
-					}
-				}
-			}
-			pc = newPC;
-			cycle++;
-			inst = code.getInstruction(pc); 
-		}	
-		// Se acaba con las intrucciones pendientes
-		while (!actionList.isEmpty()) {
-			Action action = actionList.poll();
-			while (cycle < action.getCycle()) 
-				System.out.println("CYCLE: " + (cycle++) + "\tPC: " + (pc++));
-			int newPC = pc + 1;
-			// Ejecutamos todas las intrucciones planificadas para este ciclo, incluida la primera que ya separamos
-			if (pred.read(action.getOper().getPred())) {
-				newPC = execute(action.getOper(),pc);
-				if (debugMode)
-					System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
-			}
+			// Planificamos las operaciones asociadas a la nueva instrucción larga
+			if (code.isHalt(pc))
+				stop = true;
 			else {
-				if (debugMode)
-					System.out.println("\tCANCEL_EXE:\t" + action.getOper().getInstruction());						
+				schedule(code.getInstruction(pc), cycle);
+				stop = false;
 			}
-			if (debugMode)
-				System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
-			boolean noMore = false;			
-			while (!actionList.isEmpty() && !noMore) {
-				if (actionList.peek().getCycle() != cycle)
-					noMore = true;
-				else {
-					action = actionList.poll();
-					if (pred.read(action.getOper().getPred())) {
-						newPC = execute(action.getOper(),pc);
-						if (debugMode)
-							System.out.println("\tEND_EXE:\t" + action.getOper().getInstruction());
-					}
-					else {
-						if (debugMode)
-							System.out.println("\tCANCEL_EXE:\t" + action.getOper().getInstruction());						
-					}
-				}
-			}
-			pc = newPC;
-			cycle++;
-		}
+		} while (!stop || !actionList.isEmpty());
 		return cycle;
 	}
 	

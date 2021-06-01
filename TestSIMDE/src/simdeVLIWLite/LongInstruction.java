@@ -49,6 +49,10 @@ public class LongInstruction {
 		return innerStructure.get(fu)[idFU];
 	}
 
+	/**
+	 * Devuelve las operaciones válidas (excluyendo NOP) que incluye esta instrucción larga
+	 * @return las operaciones válidas (excluyendo NOP) que incluye esta instrucción larga
+	 */
 	public ArrayList<LongInstructionOperation> getValidOperations() {
 		final ArrayList<LongInstructionOperation> list = new ArrayList<>();
 		for (LongInstructionOperation[] opers : innerStructure.values()) {

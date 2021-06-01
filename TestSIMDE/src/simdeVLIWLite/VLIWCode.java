@@ -18,6 +18,7 @@ import simdeVLIWLite.LongInstruction.LongInstructionOperation;
 public class VLIWCode {
 	private final ArrayList<LongInstruction> longInstructions;
 	private final TreeMap<FunctionalUnit, Integer> configuration;
+	private final LongInstruction NOPLongInstruction;
 	
 	/**
 	 * 
@@ -25,6 +26,7 @@ public class VLIWCode {
 	public VLIWCode(TreeMap<FunctionalUnit, Integer> configuration) {
 		longInstructions = new ArrayList<>();
 		this.configuration = configuration;
+		NOPLongInstruction = new LongInstruction(configuration);
 	}
 	
 	public LongInstruction addLongInstruction() {
@@ -35,8 +37,12 @@ public class VLIWCode {
 	
 	public LongInstruction getInstruction(int index) {
 		if (index >= longInstructions.size())
-			return null;
+			return NOPLongInstruction;
 		return longInstructions.get(index);
+	}
+	
+	public boolean isHalt(int index) {
+		return (index >= longInstructions.size());
 	}
 	
 	public static VLIWCode loadCode(TreeMap<FunctionalUnit, Integer> configuration, Code code, String fileName) {
@@ -46,7 +52,6 @@ public class VLIWCode {
 		try {
 			scan = new Scanner(vliwFile);
 			int n = scan.nextInt();
-			System.out.println("N=" + n);
 			for (int i = 0; i < n; i++) {
 				final LongInstruction longInst = vliwcode.addLongInstruction();
 				int noper = scan.nextInt();

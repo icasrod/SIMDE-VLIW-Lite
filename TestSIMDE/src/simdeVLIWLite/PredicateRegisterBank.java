@@ -31,7 +31,7 @@ public class PredicateRegisterBank {
 	public boolean read(int index) {
 		if (innerStructure.containsKey(index))
 			return innerStructure.get(index);
-		return true;
+		return (index==0);
 	}
 	
 	@Override

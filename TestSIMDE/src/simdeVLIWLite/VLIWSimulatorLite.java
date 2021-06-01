@@ -72,7 +72,8 @@ public class VLIWSimulatorLite {
 	
 	private static class Arguments {
 		@Parameter(names ={"--input", "-i"}, description = "Nombre de los ficheros de código (si es X, debería existir un fichero X.pla y otro X.vliw", order = 1, required = true)
-		private String fileName = "D://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle";
+//		private String fileName = "D://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle";
+		private String fileName = null;
 		@Parameter(names ={"--config", "-c"}, description = "Configuración de la máquina VLIW, expresado como número de UF de cada tipo, separadas por comas: <#SUMA_ENTERA,#MULT_ENTERA,#SUMA_FP,#MULT_FP,#MEMORIA>. Por defecto son dos de cada tipo. Siempre hay una única de salto.", order = 2)
 		private String config = "2,2,2,2,2";
 		@Parameter(names ={"--mem", "-m"}, description = "Nombre del fichero de configuración de memoria y registros", order = 3)

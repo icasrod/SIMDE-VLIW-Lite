@@ -32,6 +32,10 @@ public class FPRegisterBank {
 		return 0;
 	}
 	
+	public void reset() {
+		innerStructure.clear();
+	}
+	
 	@Override
 	public String toString() {
 		final StringBuffer str = new StringBuffer(STR + System.lineSeparator());

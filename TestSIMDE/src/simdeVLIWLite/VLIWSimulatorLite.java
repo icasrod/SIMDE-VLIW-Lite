@@ -50,11 +50,13 @@ public class VLIWSimulatorLite {
 					  .build();
 			jc.parse(args);
 			
-			final Code code = Code.loadCode(args1.fileName + ".pla");
+			if(args1.cacheMissRate < 0 || args1.cacheMissRate > 100)
+				throw new ParameterException("El porcentaje de fallos de caché debe ser un número entre 0 y 100. Usado: " + args1.cacheMissRate);
 			final TreeMap<FunctionalUnit, Integer> configuration = getConfiguration(args1.config);
+			final VLIWMachine machine = new VLIWMachine(configuration, args1.cacheMissRate, args1.cacheMissPenalty);
+			final Code code = Code.loadCode(args1.fileName + ".pla");
 			final VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, args1.fileName + ".vliw");
 			System.out.println(vliwcode);
-			final VLIWMachine machine = new VLIWMachine(configuration);
 			if (args1.memFileName != null)
 				machine.loadMemoryAndRegisters(args1.memFileName);
 			machine.setDebugMode(args1.debug);
@@ -78,8 +80,12 @@ public class VLIWSimulatorLite {
 		private String config = "2,2,2,2,2";
 		@Parameter(names ={"--mem", "-m"}, description = "Nombre del fichero de configuración de memoria y registros", order = 3)
 		private String memFileName = null;
-		@Parameter(names ={"--debug", "-d"}, description = "Habilita el modo de debug", order = 6)
+		@Parameter(names ={"--debug", "-d"}, description = "Habilita el modo de debug", order = 4)
 		private boolean debug = false;
+		@Parameter(names ={"--cachemissrate", "-cmr"}, description = "Porcentaje de fallos de caché (un número entero entre 0 y 100)", order = 5)
+		private int cacheMissRate = 0;
+		@Parameter(names ={"--cachemisspenalty", "-cmp"}, description = "Latencia ADICIONAL cuando se produce un falló de caché", order = 5)
+		private int cacheMissPenalty = 5;
 	}
 	
 }

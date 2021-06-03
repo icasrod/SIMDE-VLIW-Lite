@@ -8,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.PriorityQueue;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.TreeMap;
 
@@ -29,16 +30,18 @@ public class VLIWMachine {
 
 	private final PriorityQueue<Action> actionList;
 	private boolean debugMode = false;
+	private final Random rnd;
 	
 	/**
 	 * 
 	 */
-	public VLIWMachine(TreeMap<FunctionalUnit, Integer> configuration) {
+	public VLIWMachine(TreeMap<FunctionalUnit, Integer> configuration, int cacheFailRate, int cacheFailPenalty) {
 		gpr = new GPRegisterBank(NREG);
 		fpr = new FPRegisterBank(NREG);
-		mem = new Memory(NMEM);
+		mem = new Memory(NMEM, (double)cacheFailRate / 100.0, cacheFailPenalty);
 		pred = new PredicateRegisterBank(NREG);
 		actionList = new PriorityQueue<>();
+		this.rnd = new Random();
 	}
 
 	/**
@@ -102,6 +105,13 @@ public class VLIWMachine {
 		
 	}
 	
+	public void reset() {
+		gpr.reset();
+		fpr.reset();
+		mem.reset();
+		pred.reset();
+	}
+	
 	private void setOperandValues(LongInstructionOperation op) {
 		double []values = new double[2];
 		final Instruction inst = op.getInstruction();
@@ -154,153 +164,99 @@ public class VLIWMachine {
 		op.setOperandValues(values);
 	}
 	
-	private int execute(LongInstructionOperation op, int pc) {
+	private int execute(Action action, int pc) throws SIMDEException {
+		final LongInstructionOperation op = action.getOper();
 		if (pred.read(op.getPred())) {
 			int op1, op2;
 			double opFP1, opFP2;
 			final Instruction inst = op.getInstruction();
-			switch (inst.getOpcode()) {
-			case ADD:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 + op2);
-				pc++;
-				break;
-			case ADDF:
+			switch (inst.getOpcode().getFU()) {
+			case FP_ADD:
 				opFP1 = op.getOperand1Value();
 				opFP2 = op.getOperand2Value();
-				fpr.write(inst.getOp()[0], opFP1 + opFP2);
-				pc++;
-				break;
-			case ADDI:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 + op2);
-				pc++;
-				break;
-			case AND:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 & op2);
-				pc++;
-				break;
-			case BEQ:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				pc = (op1 == op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
-				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 == op2));
-				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 != op2));
-				break;
-			case BGT:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				pc = (op1 > op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
-				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 > op2));
-				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 <= op2));
-				break;
-			case BNE:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				pc = (op1 != op2) ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
-				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), (op1 != op2));
-				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), (op1 == op2));
-				break;
-			case LF:
-				try {
-					fpr.write(inst.getOp()[0], mem.read((int)op.getOperand1Value()));
-				} catch (SIMDEException e) {
-					e.printStackTrace();
+				switch(inst.getOpcode()) {
+				case ADDF:	fpr.write(inst.getOp()[0], opFP1 + opFP2);	break;
+				case SUBF:	fpr.write(inst.getOp()[0], opFP1 - opFP2);	break;
+				default:
+					throw new SIMDEException("Código de operación inesperado en la unidad de suma de punto flotante: " + inst.getOpcode());
 				}
 				pc++;
 				break;
-			case LW:
-				try {
-					gpr.write(inst.getOp()[0], (int)mem.read((int)op.getOperand1Value()));
-				} catch (SIMDEException e) {
-					e.printStackTrace();
-				}
-				pc++;
-				break;
-			case MULT:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 * op2);
-				pc++;
-				break;
-			case MULTF:
+			case FP_MULT:
 				opFP1 = op.getOperand1Value();
 				opFP2 = op.getOperand2Value();
-				fpr.write(inst.getOp()[0], opFP1 * opFP2);
+				if (Opcode.MULTF.equals(inst.getOpcode()))
+					fpr.write(inst.getOp()[0], opFP1 * opFP2);
+				else
+					throw new SIMDEException("Código de operación inesperado en la unidad de multiplicación de punto flotante: " + inst.getOpcode());
 				pc++;
 				break;
-			case NOR:
+			case INT_ADD:
 				op1 = (int)op.getOperand1Value();
 				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], ~(op1 | op2));
-				pc++;
-				break;
-			case OR:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 | op2);
-				pc++;
-				break;
-			case SF:
-				try {
-					mem.write((int)op.getOperand1Value(), op.getOperand2Value());
-				} catch (SIMDEException e) {
-					e.printStackTrace();
+				switch (inst.getOpcode()) {
+				case ADD:
+				case ADDI:	gpr.write(inst.getOp()[0], op1 + op2);		break;
+				case AND:	gpr.write(inst.getOp()[0], op1 & op2);		break;
+				case NOR:	gpr.write(inst.getOp()[0], ~(op1 | op2));	break;
+				case OR:	gpr.write(inst.getOp()[0], op1 | op2);		break;
+				case SLLV:	gpr.write(inst.getOp()[0], op1 << op2);		break;
+				case SRLV:	gpr.write(inst.getOp()[0], op1 >> op2);		break;
+				case SUB:	gpr.write(inst.getOp()[0], op1 - op2);		break;
+				case XOR:	gpr.write(inst.getOp()[0], op1 ^ op2);		break;
+				default:
+					throw new SIMDEException("Código de operación inesperado en la unidad de suma entera: " + inst.getOpcode());
 				}
 				pc++;
 				break;
-			case SLLV:
+			case INT_MULT:
 				op1 = (int)op.getOperand1Value();
 				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 << op2);
+				if (Opcode.MULT.equals(inst.getOpcode()))
+					gpr.write(inst.getOp()[0], op1 * op2);
+				else
+					throw new SIMDEException("Código de operación inesperado en la unidad de multiplicación entera: " + inst.getOpcode());
 				pc++;
 				break;
-			case SRLV:
+			case JUMP:
 				op1 = (int)op.getOperand1Value();
 				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 >> op2);
-				pc++;
-				break;
-			case SUB:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 - op2);
-				pc++;
-				break;
-			case SUBF:
-				opFP1 = op.getOperand1Value();
-				opFP2 = op.getOperand2Value();
-				fpr.write(inst.getOp()[0], opFP1 - opFP2);
-				pc++;
-				break;
-			case SW:
-				try {
-					mem.write((int)op.getOperand1Value(), (int)op.getOperand2Value());
-				} catch (SIMDEException e) {
-					e.printStackTrace();
+				boolean cond = false;
+				switch (inst.getOpcode()) {
+				case BEQ: cond = (op1 == op2);	break;
+				case BGT: cond = (op1 > op2);	break;
+				case BNE: cond = (op1 != op2);	break;
+				default:
+					throw new SIMDEException("Código de operación inesperado en la unidad de salto: " + inst.getOpcode());
 				}
-				pc++;
+				pc = cond ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), cond);
+				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), !cond);
 				break;
-			case XOR:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
-				gpr.write(inst.getOp()[0], op1 ^ op2);
+			case MEM:
+				if (action.isCached()) {
+					switch (inst.getOpcode()) {
+					case LF: fpr.write(inst.getOp()[0], mem.read((int)op.getOperand1Value()));		break;
+					case LW: gpr.write(inst.getOp()[0], (int)mem.read((int)op.getOperand1Value()));	break;
+					case SF: mem.write((int)op.getOperand1Value(), op.getOperand2Value());			break;
+					case SW: mem.write((int)op.getOperand1Value(), (int)op.getOperand2Value());		break;
+					default:
+						throw new SIMDEException("Código de operación inesperado en la unidad de memoria: " + inst.getOpcode());
+					}
+				}
 				pc++;
 				break;
 			default:
-				pc++;
-				break;
-			
+				throw new SIMDEException("Unidad funcional desconocida: " + inst.getOpcode().getFU());
 			}
 			if (debugMode)
 				System.out.println("\tEND_EXE:\t" + op.getInstruction());
 		}
-		else if (debugMode) {
+		else  {
+			if (debugMode) {
 				System.out.println("\tCANCEL_EXE:\t" + op.getInstruction());						
+			}
+			pc = pc + 1;
 		}
 		return pc;
 	}
@@ -336,6 +292,22 @@ public class VLIWMachine {
 		}
 		return list;
 	}
+	
+	/**
+	 * Añade una burbuja en la ejecución por, por ejemplo, un fallo de caché.
+	 * 
+	 * Lo que hace es replanificar todas las tareas.
+	 * @param latency Penalización en ciclos de ejecución
+	 */
+	private void addStall(int latency) {
+		Action[] actions = new Action[actionList.size()];
+		actions = actionList.toArray(actions);
+		actionList.clear();
+		for (Action prevAction : actions) {
+			actionList.add(new Action(prevAction, latency));
+		}
+	}
+	
 	public int execute(VLIWCode code) {
 		int cycle = 0;
 		int pc = 0;
@@ -343,27 +315,56 @@ public class VLIWMachine {
 		
 		if (debugMode)
 			System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
-		schedule(code.getInstruction(pc), cycle);
-		do {
-			int newPC = pc + 1;
-			// Se ejecutan las operaciones correspondientes a este ciclo
-			final ArrayList<Action> actions = getValidActions(cycle);
-			for (Action action : actions) {
-				newPC = execute(action.getOper(), pc);
-			}
-			// Avanzamos el PC y el ciclo
-			cycle++;
-			pc = newPC;
-			if (debugMode)
-				System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
-			// Planificamos las operaciones asociadas a la nueva instrucción larga
-			if (code.isHalt(pc))
-				stop = true;
-			else {
-				schedule(code.getInstruction(pc), cycle);
-				stop = false;
-			}
-		} while (!stop || !actionList.isEmpty());
+		try {
+			schedule(code.getInstruction(pc), cycle);
+			final ArrayList<Action> pendingActions = new ArrayList<>();
+			do {
+				int newPC = pc + 1;
+				// Se ejecutan las operaciones correspondientes a este ciclo
+				final ArrayList<Action> actions = getValidActions(cycle);
+				for (Action action : actions) {
+					try {
+						newPC = execute(action, pc);
+					} catch (CacheFailException e) {
+						// Colocamos la acción que provocó el fallo en la lista de pendientes
+						pendingActions.add(action);
+					}
+				}
+				// Si hubo fallos de caché, tenemos que meter burbujas en la ejecución. 
+				// Además, retrasamos la ejecución de las tareas pendientes. La forma no es muy eficiente (sacar todas las acciones y volver a meterlas, pero es lo más seguro
+				// También esto asegura que la acción que provocó el fallo de caché se replanifique cuando corresponda
+				if (pendingActions.size() > 0) {
+					addStall(mem.getCacheMissPenalty());
+					cycle += mem.getCacheMissPenalty();
+					if (debugMode) {
+						System.out.println("CACHE FAIL! Adding penalty: " + mem.getCacheMissPenalty());
+						System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
+					}
+					// Ejecutamos las acciones que provocaron el fallo (puede haber más de un fallo de caché)
+					while (pendingActions.size() > 0) {
+						final Action action = pendingActions.remove(0);
+						// No puede fallar dos veces seguidas
+						action.setCached();
+						// Se lanza forzando ignorando el PC de salida, que se tuvo que haber calculado antes
+						execute(action, pc);
+					}
+				}
+				// Avanzamos el PC y el ciclo
+				cycle++;
+				pc = newPC;
+				if (debugMode)
+					System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
+				// Planificamos las operaciones asociadas a la nueva instrucción larga
+				if (code.isHalt(pc))
+					stop = true;
+				else {
+					schedule(code.getInstruction(pc), cycle);
+					stop = false;
+				}
+			} while (!stop || !actionList.isEmpty());
+		} catch (SIMDEException e) {
+			e.printStackTrace();
+		}
 		return cycle;
 	}
 	
@@ -384,13 +385,29 @@ public class VLIWMachine {
 	private class Action implements Comparable<Action> {
 		private final int cycle;
 		private final LongInstructionOperation oper;
+		private boolean cached = true;
+		
 		/**
+		 * Crea una nueva acción para ejecutar la operación "oper" el ciclo "cycle"
 		 * @param cycle
 		 * @param oper
 		 */
 		public Action(int cycle, LongInstructionOperation oper) {
 			this.cycle = cycle;
 			this.oper = oper;
+			if (FunctionalUnit.MEM.equals(oper.getInstruction().getOpcode().getFU())) {
+				cached = (rnd.nextDouble() >= mem.getCacheMissRate());
+			}
+		}
+		
+		/**
+		 * Crea una nueva acción copia de la anterior pero retrasada "latency" ciclos de ejecución
+		 * @param prevAction Acción anteriormente planificada
+		 * @param latency Penalización de latencia
+		 */
+		public Action(Action prevAction, int latency) {
+			this.cycle = prevAction.cycle + latency;
+			this.oper = prevAction.oper;
 		}
 		
 		public int getCycle() {
@@ -401,6 +418,20 @@ public class VLIWMachine {
 			return oper;
 		}
 		
+		/**
+		 * @return the cached
+		 */
+		public boolean isCached() {
+			return cached;
+		}
+
+		/**
+		 * @param cached the cached to set
+		 */
+		public void setCached() {
+			this.cached = true;
+		}
+
 		@Override
 		public int compareTo(Action o) {
 			if (cycle < o.cycle)

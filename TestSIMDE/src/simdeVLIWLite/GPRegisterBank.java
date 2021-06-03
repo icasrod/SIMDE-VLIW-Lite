@@ -34,6 +34,10 @@ public class GPRegisterBank {
 		return 0;
 	}
 	
+	public void reset() {
+		innerStructure.clear();
+	}
+	
 	@Override
 	public String toString() {
 		final StringBuffer str = new StringBuffer(STR + System.lineSeparator());

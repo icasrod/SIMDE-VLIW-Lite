@@ -243,18 +243,21 @@ public class VLIWMachine {
 					default:
 						throw new SIMDEException("Código de operación inesperado en la unidad de memoria: " + inst.getOpcode());
 					}
+					pc++;
 				}
-				pc++;
+				else {
+					throw new CacheFailException();
+				}
 				break;
 			default:
 				throw new SIMDEException("Unidad funcional desconocida: " + inst.getOpcode().getFU());
 			}
 			if (debugMode)
-				System.out.println("\tEND_EXE:\t" + op.getInstruction());
+				System.out.println("\tFINAL:\t" + op.getInstruction());
 		}
 		else  {
 			if (debugMode) {
-				System.out.println("\tCANCEL_EXE:\t" + op.getInstruction());						
+				System.out.println("\tCANCELADA:\t" + op.getInstruction());						
 			}
 			pc = pc + 1;
 		}
@@ -271,7 +274,7 @@ public class VLIWMachine {
 		final ArrayList<LongInstructionOperation> opers = inst.getValidOperations();
 		for (LongInstructionOperation op : opers) {
 			if (debugMode)
-				System.out.println("\tSTART_EXE:\t" + op.getInstruction());
+				System.out.println("\tCOMIENZO:\t" + op.getInstruction());
 			setOperandValues(op);
 			actionList.add(new Action(cycle + op.getInstruction().getOpcode().getFU().getLatency() - 1, op));
 		}
@@ -314,7 +317,7 @@ public class VLIWMachine {
 		boolean stop = false;
 		
 		if (debugMode)
-			System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
+			System.out.println("CICLO: " + cycle + "\tPC: " + pc);
 		try {
 			schedule(code.getInstruction(pc), cycle);
 			final ArrayList<Action> pendingActions = new ArrayList<>();
@@ -337,8 +340,8 @@ public class VLIWMachine {
 					addStall(mem.getCacheMissPenalty());
 					cycle += mem.getCacheMissPenalty();
 					if (debugMode) {
-						System.out.println("CACHE FAIL! Adding penalty: " + mem.getCacheMissPenalty());
-						System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
+						System.out.println("¡FALLO CACHE! Añadiendo penalización: " + mem.getCacheMissPenalty());
+						System.out.println("CICLO: " + cycle + "\tPC: " + pc);
 					}
 					// Ejecutamos las acciones que provocaron el fallo (puede haber más de un fallo de caché)
 					while (pendingActions.size() > 0) {
@@ -353,7 +356,7 @@ public class VLIWMachine {
 				cycle++;
 				pc = newPC;
 				if (debugMode)
-					System.out.println("CYCLE: " + cycle + "\tPC: " + pc);
+					System.out.println("CICLO: " + cycle + "\tPC: " + pc);
 				// Planificamos las operaciones asociadas a la nueva instrucción larga
 				if (code.isHalt(pc))
 					stop = true;

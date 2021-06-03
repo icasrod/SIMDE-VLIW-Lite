@@ -54,16 +54,45 @@ public class VLIWSimulatorLite {
 				throw new ParameterException("El porcentaje de fallos de caché debe ser un número entre 0 y 100. Usado: " + args1.cacheMissRate);
 			final TreeMap<FunctionalUnit, Integer> configuration = getConfiguration(args1.config);
 			final VLIWMachine machine = new VLIWMachine(configuration, args1.cacheMissRate, args1.cacheMissPenalty);
+			machine.setDebugMode(args1.debug);
 			final Code code = Code.loadCode(args1.fileName + ".pla");
 			final VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, args1.fileName + ".vliw");
 			System.out.println(vliwcode);
-			if (args1.memFileName != null)
-				machine.loadMemoryAndRegisters(args1.memFileName);
-			machine.setDebugMode(args1.debug);
-			machine.printMemoryAndRegisters();
-			int cycles = machine.execute(vliwcode);
-			machine.printMemoryAndRegisters();
-			System.out.println("Total ciclos: " + cycles);
+			// Si no hay fallos de caché, lanzo una única simulación
+			if (args1.cacheMissRate == 0) {
+				if (args1.memFileName != null)
+					machine.loadMemoryAndRegisters(args1.memFileName);
+				if (args1.debug)
+					machine.printMemoryAndRegisters();
+				int cycles = machine.execute(vliwcode);
+				if (args1.debug)
+					machine.printMemoryAndRegisters();
+				System.out.println("Total ciclos: " + cycles);
+			}
+			// En otro caso, lanzo tantas como indique el parámetro cacheMissSimul
+			else {
+				if(args1.cacheMissSimul < 1)
+					throw new ParameterException("El número de réplicas a lanzar cuando el porcentaje de fallos de caché es mayor que 0 debe ser mayor que 0. Usado: " + args1.cacheMissSimul);
+				final int[] results = new int[args1.cacheMissSimul];
+				for (int i = 0; i < args1.cacheMissSimul; i++) {
+					if (args1.debug)
+						System.out.println("Simulando réplica " + i);
+					machine.reset();
+					if (args1.memFileName != null) {
+						machine.loadMemoryAndRegisters(args1.memFileName);
+					}
+					results[i] = machine.execute(vliwcode);
+					if (args1.debug)
+						machine.printMemoryAndRegisters();
+				}
+				double promedio = Statistics.average(results);
+				double sd = Statistics.stdDev(results, promedio);
+				double []ci = Statistics.normal95CI(promedio, sd, args1.cacheMissSimul);
+				System.out.println("Número réplicas: " + args1.cacheMissSimul);
+				System.out.println("Ciclos Promedio (Desv. Est.): " + promedio + " (" + sd + ")");
+				System.out.println("Ciclos IC95%: [" + ci[0] + ", " + ci[1] + "]");
+				System.out.println("Ciclos [min-max]: [" + Statistics.min(results) + " - " + Statistics.max(results) + "]");
+			}
 		} catch (ParameterException ex) {
 			System.out.println(ex.getMessage());
 			ex.usage();
@@ -86,6 +115,8 @@ public class VLIWSimulatorLite {
 		private int cacheMissRate = 0;
 		@Parameter(names ={"--cachemisspenalty", "-cmp"}, description = "Latencia ADICIONAL cuando se produce un falló de caché", order = 5)
 		private int cacheMissPenalty = 5;
+		@Parameter(names ={"--cachemisssimul", "-cms"}, description = "Número de réplicas a lanzar cuando se pone un porcentaje de fallos de caché > 0", order = 5)
+		private int cacheMissSimul = 20;
 	}
 	
 }

@@ -4,6 +4,7 @@
 package simdeVLIWLite;
 
 /**
+ * Tipos de operando que puede definir una instrucción del código secuencial
  * @author Iván Castilla
  *
  */
@@ -45,8 +46,8 @@ public enum OperandType {
 	};
 	
 	/**
-	 * Crea el o los operandos en bajo nivel para la instrucción
-	 * @return el o los operandos en bajo nivel para la instrucción
+	 * Crea el o los operandos "virtuales" de la instrucción
+	 * @return El o los operandos "virtuales" de la instrucción
 	 */
 	abstract int[] assemble(String op);
 }

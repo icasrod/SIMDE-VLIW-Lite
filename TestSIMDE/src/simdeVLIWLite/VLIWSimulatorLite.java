@@ -12,6 +12,12 @@ import com.beust.jcommander.ParameterException;
 
 
 /**
+ * Una versión simple del simulador de VLIW de SIMDE. Se trata de un port para java que simplemente ejecuta códigos creados en SIMDE.
+ * La aplicación necesita un código secuencial en pseudoMIPS de SIMDE (generalmente en un fichero .pla) y una planificación de ese código para la 
+ * máquina VLIW (en un fichero .vliw). Opcionalmente requiere una inicialización de la memoria y registros (fichero .mem).
+ * El simulador ejecuta el código y devuelve el total de ciclos de ejecución. 
+ * También permite añadir un porcentaje de fallos de caché, en cuyo caso lanza varias réplicas y devuelve media, desviación estándar, máximo y mínimo...  
+ * La aplicación asume que el código secuencial y su planificación están correctamente construidas y no continen errores. 
  * @author Iván Castilla
  *
  */
@@ -40,7 +46,8 @@ public class VLIWSimulatorLite {
 	}
 	
 	/**
-	 * @param args
+	 * Lanza la aplicación
+	 * @param args Argumentos de la aplicación, definidos en {@link Arguments}
 	 */
 	public static void main(String[] args) {
 		try {
@@ -57,7 +64,8 @@ public class VLIWSimulatorLite {
 			machine.setDebugMode(args1.debug);
 			final Code code = Code.loadCode(args1.fileName + ".pla");
 			final VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, args1.fileName + ".vliw");
-			System.out.println(vliwcode);
+			if (args1.debug)
+				System.out.println(vliwcode);
 			// Si no hay fallos de caché, lanzo una única simulación
 			if (args1.cacheMissRate == 0) {
 				if (args1.memFileName != null)
@@ -100,7 +108,11 @@ public class VLIWSimulatorLite {
 		}
 	}
 
-	
+	/**
+	 * Argumentos de la línea de comandos del programa
+	 * @author Iván Castilla
+	 *
+	 */
 	private static class Arguments {
 		@Parameter(names ={"--input", "-i"}, description = "Nombre de los ficheros de código (si es X, debería existir un fichero X.pla y otro X.vliw", order = 1, required = true)
 //		private String fileName = "D://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle";

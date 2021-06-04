@@ -1,0 +1,5 @@
+Manifest-Version: 1.0
+Class-Path: jcommander-1.69.jar
+Created-By: 1.8.0_102 (Oracle Corporation)
+Main-Class: simdeVLIWLite.VLIWSimulatorLite
+

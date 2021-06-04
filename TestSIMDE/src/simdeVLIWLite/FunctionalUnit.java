@@ -4,6 +4,7 @@
 package simdeVLIWLite;
 
 /**
+ * Unidades funcionales de que dispone la máquina
  * @author Iván Castilla
  *
  */
@@ -15,23 +16,22 @@ public enum FunctionalUnit {
 	MEM(4),
 	JUMP(2);
 	
+	/**
+	 * Crea una undad funcional de latencia "latency"
+	 * @param latency Latencia de la unidad funcional, es decir, cuántos ciclos tarda en ejecutar una instrucción
+	 */
 	private FunctionalUnit(int latency) {
 		this.latency = latency;
 	}
 	
-	private int latency;
+	/** Latencia de la unidad funcional, es decir, cuántos ciclos tarda en ejecutar una instrucción */
+	private final int latency;
 
 	/**
-	 * @return the latency
+	 * Devuelve la latencia de la unidad funcional, es decir, cuántos ciclos tarda en ejecutar una instrucción
+	 * @return la latencia de la unidad funcional, es decir, cuántos ciclos tarda en ejecutar una instrucción
 	 */
 	public int getLatency() {
 		return latency;
-	}
-
-	/**
-	 * @param latency the latency to set
-	 */
-	public void setLatency(int latency) {
-		this.latency = latency;
 	}
 }

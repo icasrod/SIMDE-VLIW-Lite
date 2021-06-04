@@ -4,6 +4,7 @@
 package simdeVLIWLite;
 
 /**
+ * Tokens que emplea el analizador léxico del código secuencial
  * @author Iván Castilla
  *
  */

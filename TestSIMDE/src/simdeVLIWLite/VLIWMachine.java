@@ -16,24 +16,38 @@ import simdeVLIWLite.LongInstruction.LongInstructionJumpOperation;
 import simdeVLIWLite.LongInstruction.LongInstructionOperation;
 
 /**
+ * La máquina VLIW simulada
  * @author Iván Castilla
  *
  */
 public class VLIWMachine {
+	/** Cadena de texto que identifica el comienzo de una dirección en un fichero de contenido de memoria y registros */
 	private final static String STR_START_DIR = "[";
+	/** Número de registros de cualquier tipo en la máquina */
 	private final static int NREG = 64;
+	/** Núimero de palabras de memoria en la máquina */
 	private final static int NMEM = 1024;
+	/** Banco de registros de propósito general */
 	private final GPRegisterBank gpr;
+	/** Banco de registros de punto flotante */
 	private final FPRegisterBank fpr;
+	/** Memoria */
 	private final Memory mem;
+	/** Banco de registros de predicado */
 	private final PredicateRegisterBank pred;
 
+	/** Lista de instrucciones a finalizar por la máquina en cada ciclo de reloj. Se usa para la simulación */
 	private final PriorityQueue<Action> actionList;
+	/** Modo de depuración */
 	private boolean debugMode = false;
+	/** Generador de números aleatorios para los fallos de caché */
 	private final Random rnd;
-	
+
 	/**
-	 * 
+	 * Crea una máquina VLIW
+	 * @param configuration Número de unidades funcionales de cada tipo incluidas en la máquina
+	 * @param cacheMissRate Tasa de fallos de la caché, expresada como un valor entre 0 y 100 (%).
+	 * @param cacheMissPenalty Penalización en ciclos si se produce un fallo de la caché
 	 */
 	public VLIWMachine(TreeMap<FunctionalUnit, Integer> configuration, int cacheFailRate, int cacheFailPenalty) {
 		gpr = new GPRegisterBank(NREG);
@@ -47,7 +61,7 @@ public class VLIWMachine {
 	/**
 	 * Carga la memoria y los registros desde un fichero que, al menos, debe tener 3 líneas con las cadenas
 	 * "#GPR", "#FPR" y "#MEM".
-	 * @param fileName
+	 * @param fileName Nombre del fichero que define los contenidos de registros y memoria
 	 */
 	public void loadMemoryAndRegisters(String fileName) {
 		final File memFile = new File(fileName);
@@ -98,13 +112,18 @@ public class VLIWMachine {
 		}
 	}
 
+	/**
+	 * Imprime por pantalla el contenido de memoria y registros
+	 */
 	public void printMemoryAndRegisters() {
 		System.out.print(gpr);
 		System.out.print(fpr);
 		System.out.print(mem);
-		
 	}
-	
+
+	/**
+	 * Resetea la máquina
+	 */
 	public void reset() {
 		gpr.reset();
 		fpr.reset();
@@ -112,6 +131,10 @@ public class VLIWMachine {
 		pred.reset();
 	}
 	
+	/**
+	 * Busca y establece los valores de los operandos en tiempo de ejecución
+	 * @param op Operación que encapsula la instrucción secuencial que se quiere ejecutar
+	 */
 	private void setOperandValues(LongInstructionOperation op) {
 		double []values = new double[2];
 		final Instruction inst = op.getInstruction();
@@ -164,6 +187,13 @@ public class VLIWMachine {
 		op.setOperandValues(values);
 	}
 	
+	/**
+	 * Finaliza la ejecución de una instrucción
+	 * @param action Acción que encapsula a la instrucción
+	 * @param pc Contador de programa que indica cuándo se está ejecutando la instrucción
+	 * @return El contador de programa resultante de la ejecución de esta instrucción
+	 * @throws SIMDEException Errores de ejecución
+	 */
 	private int execute(Action action, int pc) throws SIMDEException {
 		final LongInstructionOperation op = action.getOper();
 		if (pred.read(op.getPred())) {
@@ -266,7 +296,6 @@ public class VLIWMachine {
 
 	/**
 	 * Planifica las operaciones para que se terminen de ejecutar cuando corresponda
-	 * TODO: De momento, no tiene en cuenta fallos de caché
 	 * @param inst Instrucción larga que contiene las operaciones a planificar
 	 * @param cycle Ciclo de reloj en que se está comenzando la ejecución de esta instrucción larga
 	 */
@@ -280,6 +309,11 @@ public class VLIWMachine {
 		}
 	}
 	
+	/**
+	 * Devuelve las instrucciones cuya ejecución está planificada para terminarse en el ciclo que se indica 
+	 * @param cycle Ciclo de ejecución de la máquina
+	 * @return Instrucciones cuya ejecución está planificada para terminarse en el ciclo que se indica
+	 */
 	private ArrayList<Action> getValidActions(int cycle) {
 		final ArrayList<Action> list = new ArrayList<>();
 		boolean more = true;
@@ -311,6 +345,11 @@ public class VLIWMachine {
 		}
 	}
 	
+	/**
+	 * Ejecuta el código de instrucciones largas indicado en esta máquina
+	 * @param code Código de instrucciones largas
+	 * @return El número de ciclos que tardó la ejecución
+	 */
 	public int execute(VLIWCode code) {
 		int cycle = 0;
 		int pc = 0;
@@ -348,7 +387,7 @@ public class VLIWMachine {
 						final Action action = pendingActions.remove(0);
 						// No puede fallar dos veces seguidas
 						action.setCached();
-						// Se lanza forzando ignorando el PC de salida, que se tuvo que haber calculado antes
+						// Se lanza ignorando el PC de salida, que se tuvo que haber calculado antes
 						execute(action, pc);
 					}
 				}
@@ -372,28 +411,38 @@ public class VLIWMachine {
 	}
 	
 	/**
-	 * @return the debugMode
+	 * Devuelve verdadero si la máquina está en modo de depuración
+	 * @return Verdadero si la máquina está en modo de depuración
 	 */
 	public boolean isDebugMode() {
 		return debugMode;
 	}
 
 	/**
-	 * @param debugMode the debugMode to set
+	 * Establece el modo de depuración de la máquina
+	 * @param Verdadero si la máquina debe estar en modo de depuración; falso en otro caso.
 	 */
 	public void setDebugMode(boolean debugMode) {
 		this.debugMode = debugMode;
 	}
 
+	/**
+	 * Una estructura para poder simular la ejecución de las instrucciones. Indica una operación y el ciclo en que se espera que deba terminar la ejecución de la instrucción 
+	 * @author Iván Castilla
+	 *
+	 */
 	private class Action implements Comparable<Action> {
+		/** Ciclo de reloj en el que se va a finalizar la ejecución de esta instrucción */
 		private final int cycle;
+		/** Operación que encapsula la instrucción a finalizar */
 		private final LongInstructionOperation oper;
+		/** En el caso de las instrucciones de acceso a memoria, indica si el acceso producirá un fallo de caché (valor false). En el resto de casos, siempre es verdadero */
 		private boolean cached = true;
 		
 		/**
 		 * Crea una nueva acción para ejecutar la operación "oper" el ciclo "cycle"
-		 * @param cycle
-		 * @param oper
+		 * @param cycle Ciclo de reloj en el que se va a finalizar la ejecución de esta instrucción
+		 * @param oper Operación que encapsula la instrucción a finalizar
 		 */
 		public Action(int cycle, LongInstructionOperation oper) {
 			this.cycle = cycle;
@@ -413,23 +462,32 @@ public class VLIWMachine {
 			this.oper = prevAction.oper;
 		}
 		
+		/**
+		 * Devuelve el ciclo de reloj en el que se va a finalizar la ejecución de esta instrucción
+		 * @return Ciclo de reloj en el que se va a finalizar la ejecución de esta instrucción
+		 */
 		public int getCycle() {
 			return cycle;
 		}
 		
+		/**
+		 * Devuelve la operación que encapsula la instrucción a finalizar
+		 * @return Operación que encapsula la instrucción a finalizar
+		 */
 		public LongInstructionOperation getOper() {
 			return oper;
 		}
 		
 		/**
-		 * @return the cached
+		 * Devuelve verdadero si es una instrucción de memoria y no produce fallo de caché, o si es cualquier otro tipo de instrucción.
+		 * @return Verdadero si es una instrucción de memoria y no produce fallo de caché, o si es cualquier otro tipo de instrucción
 		 */
 		public boolean isCached() {
 			return cached;
 		}
 
 		/**
-		 * @param cached the cached to set
+		 * Establece que la instrucción no producirá un fallo de caché. Solo tiene sentido con instrucciones de memoria.
 		 */
 		public void setCached() {
 			this.cached = true;

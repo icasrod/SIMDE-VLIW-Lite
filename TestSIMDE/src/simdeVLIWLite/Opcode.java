@@ -4,6 +4,7 @@
 package simdeVLIWLite;
 
 /**
+ * Códigos de operación permitidos para las instrucciones secuenciales de la máquina simulada
  * @author Iván Castilla
  *
  */
@@ -29,23 +30,32 @@ public enum Opcode {
 	BEQ(FunctionalUnit.JUMP, new OperandType[] {OperandType.GPREGISTER, OperandType.GPREGISTER, OperandType.LABEL}), 
 	BGT(FunctionalUnit.JUMP, new OperandType[] {OperandType.GPREGISTER, OperandType.GPREGISTER, OperandType.LABEL});
 	
+	/** Unidad funcional donde se ejecuta esta instrucción */
 	private final FunctionalUnit fu;
+	/** Operandos que define la instrucción */
 	private final OperandType[] operands;
 	
+	/**
+	 * Crea un código de operación
+	 * @param fu Unidad funcional donde se ejecuta esta instrucción
+	 * @param operands Operandos que define la instrucción
+	 */
 	private Opcode(FunctionalUnit fu, OperandType[] operands) {
 		this.fu = fu;
 		this.operands = operands;
 	}
 	
 	/**
-	 * @return the fu
+	 * Devuelve la unidad funcional donde se ejecuta esta instrucción
+	 * @return Unidad funcional donde se ejecuta esta instrucción
 	 */
 	public FunctionalUnit getFU() {
 		return fu;
 	}
 
 	/**
-	 * @return the operands
+	 * Devuelve los operandos que define la instrucción
+	 * @return Operandos que define la instrucción
 	 */
 	public OperandType[] getOperands() {
 		return operands;

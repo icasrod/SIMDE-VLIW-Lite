@@ -4,6 +4,7 @@
 package simdeVLIWLite;
 
 /**
+ * Una instrucción secuencial de la máquina simulada
  * @author Iván Castilla
  *
  */
@@ -16,64 +17,60 @@ public class Instruction {
 	private final Opcode opcode;
 	/** Valores de los 3 operandos */
     private final int op[];
-    private final String strOpcode;   // Cadena de caracteres con el opcode
-    private final String strOp[];    // Cadena de caracteres que representa cada operando
+    /** Cadena de caracteres que representa cada operando */
+    private final String strOp[]; 
 
     /**
-	 * @param id
-	 * @param basicBlock
-	 * @param opcode
-	 * @param op
-	 * @param strOpcode
-	 * @param strOp
-	 * @param strLabel
-	 */
-	public Instruction(int id, int basicBlock, Opcode opcode, int[] op, String strOpcode, String[] strOp) {
+     * Crea una instrucción secuencial de la máquina simulada
+     * @param id Identificador, igual al orden en el código secuencial
+     * @param basicBlock Índice del bloque básico al que pertenece
+     * @param opcode Código de operación
+     * @param op Valores de los 3 operandos
+     * @param strOp Cadena de caracteres que representa cada operando
+     */
+	public Instruction(int id, int basicBlock, Opcode opcode, int[] op, String[] strOp) {
 		this.id = id;
 		this.basicBlock = basicBlock;
 		this.opcode = opcode;
 		this.op = op;
-		this.strOpcode = strOpcode;
 		this.strOp = strOp;
 	}
 
 	/**
-	 * @return the id
+	 * Devuelve el identificador de la instrucción
+	 * @return Identificador, igual al orden en el código secuencial
 	 */
 	public int getId() {
 		return id;
 	}
 
 	/**
-	 * @return the bBasico
+	 * Devuelve el índice del bloque básico al que pertenece
+	 * @return Índice del bloque básico al que pertenece
 	 */
 	public int getBasicBlock() {
 		return basicBlock;
 	}
 
 	/**
-	 * @return the opcode
+	 * Devuelve el código de operación de la instrucción
+	 * @return Código de operación
 	 */
 	public Opcode getOpcode() {
 		return opcode;
 	}
 
 	/**
-	 * @return the op
+	 * Devuelve los valores de los 3 potenciales operandos de la instrucción
+	 * @return Valores de los 3 operandos
 	 */
 	public int[] getOp() {
 		return op;
 	}
 
 	/**
-	 * @return the strOpcode
-	 */
-	public String getStrOpcode() {
-		return strOpcode;
-	}
-
-	/**
-	 * @return the strOp
+	 * Devuelve la cadena de caracteres que representa cada operando
+	 * @return Cadena de caracteres que representa cada operando
 	 */
 	public String[] getStrOp() {
 		return strOp;
@@ -81,7 +78,7 @@ public class Instruction {
 
 	@Override
 	public String toString() {
-		return strOpcode + "\t" + strOp[0] + " " + strOp[1] + " " + strOp[2]; 
+		return opcode.name() + "\t" + strOp[0] + " " + strOp[1] + " " + strOp[2]; 
 	}
 
 }

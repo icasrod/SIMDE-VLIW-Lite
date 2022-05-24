@@ -142,59 +142,54 @@ public class Code {
 	 * Carga un código secuencial a partir de un fichero
 	 * @param fileName Nombre del fichero que contiene el código secuencial
 	 * @return El código secuencial creado
+	 * @throws IOException 
 	 */
-	public static Code loadCode(String fileName) {
+	public static Code loadCode(String fileName) throws IOException {
 		final Code code = new Code();
-		try {
-			BufferedReader buffer = new BufferedReader(new FileReader(fileName));
-			SIMDELexer lexer = new SIMDELexer(buffer);
-			int nInst = 0;
-			int nBlock = -1;
-			boolean newBlock = true;
-			while (!lexer.yyatEOF()) {
-				final Tokens token = lexer.yylex();
-				final String text = lexer.yytext();
-				if (token != null) {
-					switch(token) {
-					case LEXETIQUETA:
-						code.addLabel(text.substring(0, text.length() - 1), nInst);
-						newBlock = true;
-						break;
-					case LEXID:
-						// Se procesa toda la instrucción, asumiendo que es correcta
-						if (newBlock) {
-							nBlock++;
-						}
-						final Opcode op = Opcode.valueOf(text);
-						// Si es una instrucción de salto, dejamos indicado para que se cree un nuevo bloque básico en la siguiente
-						newBlock = FunctionalUnit.JUMP.equals(op.getFU());
-						String[] strOps = new String[3];
-						int[] ops = new int[3];
-						int nop = 0;
-						for (OperandType opType : op.getOperands()) {
-							nop += processOperand(opType, lexer, strOps, ops, nop);
-						}
-						code.addInstruction(new Instruction(nInst, nBlock, op, ops, strOps));
-						nInst++;
-						break;
-					case LEXDIRECCION:
-					case LEXINMEDIATO:
-					case LEXNLINEAS:
-					case LEXREGFP:
-					case LEXREGGP:
-					default:
-						// Se ignoran
-						break;
-					
+		BufferedReader buffer = new BufferedReader(new FileReader(fileName));
+		SIMDELexer lexer = new SIMDELexer(buffer);
+		int nInst = 0;
+		int nBlock = -1;
+		boolean newBlock = true;
+		while (!lexer.yyatEOF()) {
+			final Tokens token = lexer.yylex();
+			final String text = lexer.yytext();
+			if (token != null) {
+				switch(token) {
+				case LEXETIQUETA:
+					code.addLabel(text.substring(0, text.length() - 1), nInst);
+					newBlock = true;
+					break;
+				case LEXID:
+					// Se procesa toda la instrucción, asumiendo que es correcta
+					if (newBlock) {
+						nBlock++;
 					}
+					final Opcode op = Opcode.valueOf(text);
+					// Si es una instrucción de salto, dejamos indicado para que se cree un nuevo bloque básico en la siguiente
+					newBlock = FunctionalUnit.JUMP.equals(op.getFU());
+					String[] strOps = new String[3];
+					int[] ops = new int[3];
+					int nop = 0;
+					for (OperandType opType : op.getOperands()) {
+						nop += processOperand(opType, lexer, strOps, ops, nop);
+					}
+					code.addInstruction(new Instruction(nInst, nBlock, op, ops, strOps));
+					nInst++;
+					break;
+				case LEXDIRECCION:
+				case LEXINMEDIATO:
+				case LEXNLINEAS:
+				case LEXREGFP:
+				case LEXREGGP:
+				default:
+					// Se ignoran
+					break;
+				
 				}
 			}
-			code.finishCode();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
+		code.finishCode();
 		return code;
 	}
 

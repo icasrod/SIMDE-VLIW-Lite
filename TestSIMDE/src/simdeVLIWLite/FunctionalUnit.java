@@ -31,7 +31,7 @@ public enum FunctionalUnit {
 	 * Devuelve la latencia de la unidad funcional, es decir, cuántos ciclos tarda en ejecutar una instrucción
 	 * @return la latencia de la unidad funcional, es decir, cuántos ciclos tarda en ejecutar una instrucción
 	 */
-	public int getLatency() {
+	public int getDefaultLatency() {
 		return latency;
 	}
 }

@@ -10,7 +10,6 @@ import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.Random;
 import java.util.Scanner;
-import java.util.TreeMap;
 
 import simdeVLIWLite.LongInstruction.LongInstructionJumpOperation;
 import simdeVLIWLite.LongInstruction.LongInstructionOperation;
@@ -42,20 +41,23 @@ public class VLIWMachine {
 	private boolean debugMode = false;
 	/** Generador de números aleatorios para los fallos de caché */
 	private final Random rnd;
+	
+	private final int[] latencies;
 
 	/**
 	 * Crea una máquina VLIW
-	 * @param configuration Número de unidades funcionales de cada tipo incluidas en la máquina
+	 * @param latencies Latencia para cada tipo de UF incluida en la máquina
 	 * @param cacheMissRate Tasa de fallos de la caché, expresada como un valor entre 0 y 100 (%).
 	 * @param cacheMissPenalty Penalización en ciclos si se produce un fallo de la caché
 	 */
-	public VLIWMachine(TreeMap<FunctionalUnit, Integer> configuration, int cacheFailRate, int cacheFailPenalty) {
+	public VLIWMachine(int[] latencies, int cacheFailRate, int cacheFailPenalty) {
 		gpr = new GPRegisterBank(NREG);
 		fpr = new FPRegisterBank(NREG);
 		mem = new Memory(NMEM, (double)cacheFailRate / 100.0, cacheFailPenalty);
 		pred = new PredicateRegisterBank(NREG);
 		actionList = new PriorityQueue<>();
 		this.rnd = new Random();
+		this.latencies = latencies;
 	}
 
 	/**
@@ -63,53 +65,49 @@ public class VLIWMachine {
 	 * "#GPR", "#FPR" y "#MEM".
 	 * @param fileName Nombre del fichero que define los contenidos de registros y memoria
 	 */
-	public void loadMemoryAndRegisters(String fileName) {
+	public void loadMemoryAndRegisters(String fileName) throws FileNotFoundException, SIMDEException {
 		final File memFile = new File(fileName);
 		Scanner scan;
 		int what = -1;
-		try {
-			scan = new Scanner(memFile);
-			// Todos los ficheros están con el "." para separar los decimales
-			scan.useLocale(Locale.ENGLISH);
-			while (scan.hasNext()) {
-				final String text = scan.next();
-				if (GPRegisterBank.STR.equals(text)) {
-					what = 0;					
-				}
-				else if (FPRegisterBank.STR.equals(text)) {
-					what = 1;					
-				}
-				else if (Memory.STR.equals(text)) {
-					what = 2;					
-				}
-				else if (text.startsWith(STR_START_DIR)) {
-					// Dirección
-					int dir = Integer.parseInt(text.substring(1, text.length() - 1));
-					switch(what) {
-					case 0:
-						while (scan.hasNextInt()) {
-							gpr.write(dir++, scan.nextInt());
-						}
-						break;
-					case 1:
-						while (scan.hasNextDouble()) {
-							fpr.write(dir++, scan.nextDouble());
-						}
-						break;
-					case 2:
-						while (scan.hasNextDouble()) {
-							mem.write(dir++, scan.nextDouble());
-						}
-						break;
-					default:
-						break;
+		scan = new Scanner(memFile);
+		// Todos los ficheros están con el "." para separar los decimales
+		scan.useLocale(Locale.ENGLISH);
+		while (scan.hasNext()) {
+			final String text = scan.next();
+			if (GPRegisterBank.STR.equals(text)) {
+				what = 0;					
+			}
+			else if (FPRegisterBank.STR.equals(text)) {
+				what = 1;					
+			}
+			else if (Memory.STR.equals(text)) {
+				what = 2;					
+			}
+			else if (text.startsWith(STR_START_DIR)) {
+				// Dirección
+				int dir = Integer.parseInt(text.substring(1, text.length() - 1));
+				switch(what) {
+				case 0:
+					while (scan.hasNextInt()) {
+						gpr.write(dir++, scan.nextInt());
 					}
+					break;
+				case 1:
+					while (scan.hasNextDouble()) {
+						fpr.write(dir++, scan.nextDouble());
+					}
+					break;
+				case 2:
+					while (scan.hasNextDouble()) {
+						mem.write(dir++, scan.nextDouble());
+					}
+					break;
+				default:
+					break;
 				}
 			}
-			scan.close();
-		} catch (FileNotFoundException | SIMDEException e) {
-			e.printStackTrace();
 		}
+		scan.close();
 	}
 
 	/**
@@ -305,7 +303,7 @@ public class VLIWMachine {
 			if (debugMode)
 				System.out.println("\tCOMIENZO:\t" + op.getInstruction());
 			setOperandValues(op);
-			actionList.add(new Action(cycle + op.getInstruction().getOpcode().getFU().getLatency() - 1, op));
+			actionList.add(new Action(cycle + latencies[op.getInstruction().getOpcode().getFU().ordinal()] - 1, op));
 		}
 	}
 	

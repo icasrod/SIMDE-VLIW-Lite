@@ -3,6 +3,7 @@
  */
 package simdeVLIWLite;
 
+import java.io.IOException;
 import java.util.Scanner;
 import java.util.TreeMap;
 
@@ -44,6 +45,32 @@ public class VLIWSimulatorLite {
 		scan.close();
 		return configuration;
 	}
+
+	/**
+	 * Crea una configuración de latencias de la  máquina a partir de una lista de números separados por comas. 
+	 * @param latencies lista de números separados por comas donde cada número corresponde a la latencia de un tipo de unidad funcional, en el orden en que están definidas en {@link FunctionalUnit}
+	 * @return
+	 */
+	private static int[] getLatencies(String latencies) throws ParameterException {
+		final int[] configuration = new int[FunctionalUnit.values().length];
+		final Scanner scan = new Scanner(latencies);
+		scan.useDelimiter(",");
+		for (int i = 0; i < FunctionalUnit.values().length; i++) {
+			if (scan.hasNextInt()) {
+				int lat = scan.nextInt();
+				if (lat < 1) {
+					scan.close();
+					throw new ParameterException("ERROR: La latencia de una unidad funcional no puede ser menor que 1. Intentando asignar " + lat);
+				}
+				configuration[i] =  lat;
+			}
+			else
+				// Por defecto
+				configuration[i] =  FunctionalUnit.values()[i].getDefaultLatency();
+		}
+		scan.close();
+		return configuration;
+	}
 	
 	/**
 	 * Lanza la aplicación
@@ -58,12 +85,13 @@ public class VLIWSimulatorLite {
 			jc.parse(args);
 			
 			if(args1.cacheMissRate < 0 || args1.cacheMissRate > 100)
-				throw new ParameterException("El porcentaje de fallos de caché debe ser un número entre 0 y 100. Usado: " + args1.cacheMissRate);
-			final TreeMap<FunctionalUnit, Integer> configuration = getConfiguration(args1.config);
-			final VLIWMachine machine = new VLIWMachine(configuration, args1.cacheMissRate, args1.cacheMissPenalty);
+				throw new ParameterException("ERROR: El porcentaje de fallos de caché debe ser un número entre 0 y 100. Usado: " + args1.cacheMissRate);
+			int []latencies = getLatencies(args1.latencies);
+			final VLIWMachine machine = new VLIWMachine(latencies, args1.cacheMissRate, args1.cacheMissPenalty);
 			machine.setDebugMode(args1.debug);
-			final Code code = Code.loadCode(args1.fileName + ".pla");
-			final VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, args1.fileName + ".vliw");
+			final Code code = Code.loadCode(args1.fileName);
+			final TreeMap<FunctionalUnit, Integer> configuration = getConfiguration(args1.config);
+			final VLIWCode vliwcode = VLIWCode.loadCode(configuration, code, args1.fileNameVLIW);
 			if (args1.debug)
 				System.out.println(vliwcode);
 			// Si no hay fallos de caché, lanzo una única simulación
@@ -80,7 +108,7 @@ public class VLIWSimulatorLite {
 			// En otro caso, lanzo tantas como indique el parámetro cacheMissSimul
 			else {
 				if(args1.cacheMissSimul < 1)
-					throw new ParameterException("El número de réplicas a lanzar cuando el porcentaje de fallos de caché es mayor que 0 debe ser mayor que 0. Usado: " + args1.cacheMissSimul);
+					throw new ParameterException("ERROR: El número de réplicas a lanzar cuando el porcentaje de fallos de caché es mayor que 0 debe ser mayor que 0. Usado: " + args1.cacheMissSimul);
 				final int[] results = new int[args1.cacheMissSimul];
 				for (int i = 0; i < args1.cacheMissSimul; i++) {
 					if (args1.debug)
@@ -101,9 +129,15 @@ public class VLIWSimulatorLite {
 				System.out.println("Ciclos IC95%: [" + ci[0] + ", " + ci[1] + "]");
 				System.out.println("Ciclos [min-max]: [" + Statistics.min(results) + " - " + Statistics.max(results) + "]");
 			}
+		} catch (IOException ex) {
+			System.out.println(ex.getMessage());
+			System.exit(-1);
 		} catch (ParameterException ex) {
 			System.out.println(ex.getMessage());
 			ex.usage();
+			System.exit(-1);
+		} catch (SIMDEException e) {
+			e.printStackTrace();
 			System.exit(-1);
 		}
 	}
@@ -114,11 +148,14 @@ public class VLIWSimulatorLite {
 	 *
 	 */
 	private static class Arguments {
-		@Parameter(names ={"--input", "-i"}, description = "Nombre de los ficheros de código (si es X, debería existir un fichero X.pla y otro X.vliw", order = 1, required = true)
-//		private String fileName = "D://Mi unidad//Docencia//Arquitectura de computadores//SIMDE v1.4//Test//bucle";
+		@Parameter(names ={"--source", "-s"}, description = "Nombre del fichero con el fuente (generalmente con extensión pla)", order = 1, required = true)
 		private String fileName = null;
+		@Parameter(names ={"--vliw", "-v"}, description = "Nombre del fichero con la planificación en la máquina VLIW (generalmente con extensión vliw)", order = 1, required = true)
+		private String fileNameVLIW = null;
 		@Parameter(names ={"--config", "-c"}, description = "Configuración de la máquina VLIW, expresado como número de UF de cada tipo, separadas por comas: <#SUMA_ENTERA,#MULT_ENTERA,#SUMA_FP,#MULT_FP,#MEMORIA>. Por defecto son dos de cada tipo. Siempre hay una única de salto.", order = 2)
 		private String config = "2,2,2,2,2";
+		@Parameter(names ={"--latencies", "-l"}, description = "Latencias de cada unidad funcional de la máquina VLIW, expresado como una lista separadas por comas: <#SUMA_ENTERA,#MULT_ENTERA,#SUMA_FP,#MULT_FP,#MEMORIA,#SALTO>.", order = 2)
+		private String latencies = "1,2,4,6,4,2";
 		@Parameter(names ={"--mem", "-m"}, description = "Nombre del fichero de configuración de memoria y registros", order = 3)
 		private String memFileName = null;
 		@Parameter(names ={"--debug", "-d"}, description = "Habilita el modo de debug", order = 4)

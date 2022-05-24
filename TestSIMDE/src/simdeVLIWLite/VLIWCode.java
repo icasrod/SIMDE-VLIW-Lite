@@ -72,38 +72,34 @@ public class VLIWCode {
 	 * @param fileName Nombre del fichero que contiene la planificación de las instrucciones largas
 	 * @return Código de instrucciones largas creado
 	 */
-	public static VLIWCode loadCode(TreeMap<FunctionalUnit, Integer> configuration, Code code, String fileName) {
+	public static VLIWCode loadCode(TreeMap<FunctionalUnit, Integer> configuration, Code code, String fileName) throws FileNotFoundException {
 		final File vliwFile = new File(fileName);
 		final VLIWCode vliwcode = new VLIWCode(configuration);
 		Scanner scan;
-		try {
-			scan = new Scanner(vliwFile);
-			int n = scan.nextInt();
-			for (int i = 0; i < n; i++) {
-				final LongInstruction longInst = vliwcode.addLongInstruction();
-				int noper = scan.nextInt();
-		        for (int j = 0; j < noper; j++) {
-		        	int ind = scan.nextInt();
-		        	// Se ignora el tipo: Se asume que es correcto
-		        	scan.nextInt();
-		        	int idFU = scan.nextInt();
-		        	int pred = scan.nextInt();
+		scan = new Scanner(vliwFile);
+		int n = scan.nextInt();
+		for (int i = 0; i < n; i++) {
+			final LongInstruction longInst = vliwcode.addLongInstruction();
+			int noper = scan.nextInt();
+	        for (int j = 0; j < noper; j++) {
+	        	int ind = scan.nextInt();
+	        	// Se ignora el tipo: Se asume que es correcto
+	        	scan.nextInt();
+	        	int idFU = scan.nextInt();
+	        	int pred = scan.nextInt();
 
-		            final Instruction inst = code.getInstructions().get(ind);
-		            if (FunctionalUnit.JUMP.equals(inst.getOpcode().getFU())) {
-		            	int destination = scan.nextInt();
-			            int predTrue = scan.nextInt();
-			            int predFalse = scan.nextInt();
-		            	longInst.addJumpInstruction(inst, pred, predTrue, predFalse, destination);
-		            }
-		            else
-		            	longInst.addInstruction(inst, idFU, pred);
-		        }
-			}
-			scan.close();
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+	            final Instruction inst = code.getInstructions().get(ind);
+	            if (FunctionalUnit.JUMP.equals(inst.getOpcode().getFU())) {
+	            	int destination = scan.nextInt();
+		            int predTrue = scan.nextInt();
+		            int predFalse = scan.nextInt();
+	            	longInst.addJumpInstruction(inst, pred, predTrue, predFalse, destination);
+	            }
+	            else
+	            	longInst.addInstruction(inst, idFU, pred);
+	        }
 		}
+		scan.close();
 		return vliwcode;		
 	}
 

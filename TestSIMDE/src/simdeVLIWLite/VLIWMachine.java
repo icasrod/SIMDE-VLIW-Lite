@@ -188,11 +188,11 @@ public class VLIWMachine {
 	/**
 	 * Finaliza la ejecución de una instrucción
 	 * @param action Acción que encapsula a la instrucción
-	 * @param pc Contador de programa que indica cuándo se está ejecutando la instrucción
-	 * @return El contador de programa resultante de la ejecución de esta instrucción
+	 * @return Si es un salto, -1 si no se toma, o el PC resultante si se toma
 	 * @throws SIMDEException Errores de ejecución
 	 */
-	private int execute(Action action, int pc) throws SIMDEException {
+	private int execute(Action action) throws SIMDEException {
+		int newPc = -1;
 		final LongInstructionOperation op = action.getOper();
 		if (pred.read(op.getPred())) {
 			int op1, op2;
@@ -208,7 +208,6 @@ public class VLIWMachine {
 				default:
 					throw new SIMDEException("Código de operación inesperado en la unidad de suma de punto flotante: " + inst.getOpcode());
 				}
-				pc++;
 				break;
 			case FP_MULT:
 				opFP1 = op.getOperand1Value();
@@ -217,7 +216,6 @@ public class VLIWMachine {
 					fpr.write(inst.getOp()[0], opFP1 * opFP2);
 				else
 					throw new SIMDEException("Código de operación inesperado en la unidad de multiplicación de punto flotante: " + inst.getOpcode());
-				pc++;
 				break;
 			case INT_ADD:
 				op1 = (int)op.getOperand1Value();
@@ -235,7 +233,6 @@ public class VLIWMachine {
 				default:
 					throw new SIMDEException("Código de operación inesperado en la unidad de suma entera: " + inst.getOpcode());
 				}
-				pc++;
 				break;
 			case INT_MULT:
 				op1 = (int)op.getOperand1Value();
@@ -244,7 +241,6 @@ public class VLIWMachine {
 					gpr.write(inst.getOp()[0], op1 * op2);
 				else
 					throw new SIMDEException("Código de operación inesperado en la unidad de multiplicación entera: " + inst.getOpcode());
-				pc++;
 				break;
 			case JUMP:
 				op1 = (int)op.getOperand1Value();
@@ -257,7 +253,8 @@ public class VLIWMachine {
 				default:
 					throw new SIMDEException("Código de operación inesperado en la unidad de salto: " + inst.getOpcode());
 				}
-				pc = cond ? ((LongInstructionJumpOperation)op).getDestination() : pc + 1;
+				if (cond)
+					newPc = ((LongInstructionJumpOperation)op).getDestination();
 				pred.write(((LongInstructionJumpOperation)op).getPredTrue(), cond);
 				pred.write(((LongInstructionJumpOperation)op).getPredFalse(), !cond);
 				break;
@@ -271,7 +268,6 @@ public class VLIWMachine {
 					default:
 						throw new SIMDEException("Código de operación inesperado en la unidad de memoria: " + inst.getOpcode());
 					}
-					pc++;
 				}
 				else {
 					throw new CacheFailException();
@@ -287,9 +283,8 @@ public class VLIWMachine {
 			if (debugMode) {
 				System.out.println("\tCANCELADA:\t" + op.getInstruction());						
 			}
-			pc = pc + 1;
 		}
-		return pc;
+		return newPc;
 	}
 
 	/**
@@ -319,8 +314,15 @@ public class VLIWMachine {
 			if (actionList.isEmpty())
 				more = false;
 			else {
-				if (actionList.peek().getCycle() == cycle)
-					list.add(actionList.poll());
+				final Action currentAction = actionList.peek();
+				if (currentAction.getCycle() == cycle) {
+					if (currentAction.getOper() instanceof LongInstructionJumpOperation) {
+						list.add(0, actionList.poll());
+					}
+					else {
+						list.add(actionList.poll());
+					}
+				}
 				else
 					more = false;
 			}
@@ -359,12 +361,14 @@ public class VLIWMachine {
 			schedule(code.getInstruction(pc), cycle);
 			final ArrayList<Action> pendingActions = new ArrayList<>();
 			do {
-				int newPC = pc + 1;
+				int branchDestinationPC = -1;
 				// Se ejecutan las operaciones correspondientes a este ciclo
 				final ArrayList<Action> actions = getValidActions(cycle);
 				for (Action action : actions) {
 					try {
-						newPC = execute(action, pc);
+						int potentialPC = execute(action);
+						if (potentialPC != -1)
+							branchDestinationPC = potentialPC;  
 					} catch (CacheFailException e) {
 						// Colocamos la acción que provocó el fallo en la lista de pendientes
 						pendingActions.add(action);
@@ -386,12 +390,12 @@ public class VLIWMachine {
 						// No puede fallar dos veces seguidas
 						action.setCached();
 						// Se lanza ignorando el PC de salida, que se tuvo que haber calculado antes
-						execute(action, pc);
+						execute(action);
 					}
 				}
 				// Avanzamos el PC y el ciclo
 				cycle++;
-				pc = newPC;
+				pc = (branchDestinationPC != -1) ? branchDestinationPC : pc + 1;
 				if (debugMode)
 					System.out.println("CICLO: " + cycle + "\tPC: " + pc);
 				// Planificamos las operaciones asociadas a la nueva instrucción larga

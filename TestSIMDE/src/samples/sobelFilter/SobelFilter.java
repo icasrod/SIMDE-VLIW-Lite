@@ -1,7 +1,7 @@
 /**
  * 
  */
-package testSobelFilter;
+package samples.sobelFilter;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -9,12 +9,12 @@ import java.io.PrintWriter;
 import java.util.Scanner;
 
 /**
- * @author Iván Castilla
+ * @author Ivï¿½n Castilla
  *
  */
 public class SobelFilter {
-	final private static String INPUT_FILE = "C:\\Users\\Iván Castilla\\Downloads\\ojo.txt";
-	final private static String OUTPUT_FILE = "C:\\Users\\Iván Castilla\\Downloads\\ojo2.txt";
+	final private static String INPUT_FILE = "C:\\Users\\Ivï¿½n Castilla\\Downloads\\ojo.txt";
+	final private static String OUTPUT_FILE = "C:\\Users\\Ivï¿½n Castilla\\Downloads\\ojo2.txt";
 	final private static int SIZE = 16;
 	final private static double[][] FILTER = {{-1, 0, 1}, {-2, 0, 2}, {-1, 0, 1}}; 
 	

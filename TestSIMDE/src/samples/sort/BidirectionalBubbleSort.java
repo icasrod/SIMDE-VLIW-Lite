@@ -1,4 +1,4 @@
-package testSort;
+package samples.sort;
 /**
  * @author icasrod
  *
@@ -6,9 +6,9 @@ package testSort;
 public class BidirectionalBubbleSort {
 	
 	/**
-	 * Ordena un vector mediante el algoritmo "Bidirectional bubble sort" y devuelve el número de ciclos que le llevaría a la versión secuencial del código equivalente en SIMDE
+	 * Ordena un vector mediante el algoritmo "Bidirectional bubble sort" y devuelve el nï¿½mero de ciclos que le llevarï¿½a a la versiï¿½n secuencial del cï¿½digo equivalente en SIMDE
 	 * @param lista Vector a ordenar
-	 * @return Número de ciclos que le llevaría esta ordenación al código equivalente en SIMDE
+	 * @return Nï¿½mero de ciclos que le llevarï¿½a esta ordenaciï¿½n al cï¿½digo equivalente en SIMDE
 	 */
 	private static int ordenar(double [] lista) {
 		int izq, der, ultimo, n, cont;
@@ -77,7 +77,7 @@ public class BidirectionalBubbleSort {
 
 	
 	/**
-	 * Ordena un vector mediante el algoritmo "Bubble sort" y devuelve el número de ciclos que le llevaría a la versión secuencial del código equivalente en SIMDE
+	 * Ordena un vector mediante el algoritmo "Bubble sort" y devuelve el nï¿½mero de ciclos que le llevarï¿½a a la versiï¿½n secuencial del cï¿½digo equivalente en SIMDE
 	 * 	para i=1 hasta n
 	 * 		para j=0 hasta n-i
 	 * 			si lista[j] > lista[j+1] entonces
@@ -87,7 +87,7 @@ public class BidirectionalBubbleSort {
 	 * 	fin para
 	 * 
 	 * @param lista Vector a ordenar
-	 * @return Número de ciclos que le llevaría esta ordenación al código equivalente en SIMDE
+	 * @return Nï¿½mero de ciclos que le llevarï¿½a esta ordenaciï¿½n al cï¿½digo equivalente en SIMDE
 	 */
 	private static int ordenarBubble(double [] lista) {
 		// R1 <- i

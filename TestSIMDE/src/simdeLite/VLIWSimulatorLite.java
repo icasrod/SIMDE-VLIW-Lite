@@ -85,8 +85,6 @@ public class VLIWSimulatorLite {
 					  .addObject(args1)
 					  .build();
 			jc.parse(args);
-			//args1.fileName = "c:/Users/icasrod/Downloads/APARTADO A.pla";
-			//args1.fileNameVLIW = "c:/Users/icasrod/Downloads/APARTADO B.vliw";
 			if(args1.cacheMissRate < 0 || args1.cacheMissRate > 100)
 				throw new ParameterException("ERROR: El porcentaje de fallos de cach� debe ser un n�mero entre 0 y 100. Usado: " + args1.cacheMissRate);
 			int []latencies = getLatencies(args1.latencies);
@@ -132,6 +130,11 @@ public class VLIWSimulatorLite {
 				System.out.println("Ciclos IC95%: [" + ci[0] + ", " + ci[1] + "]");
 				System.out.println("Ciclos [min-max]: [" + Statistics.min(results) + " - " + Statistics.max(results) + "]");
 			}
+			if (args1.cmpMemFileName != null) {
+				System.out.println("Comparando memoria y registros con el fichero " + args1.cmpMemFileName);
+				int errors = machine.compareMemoryAndRegisters(args1.cmpMemFileName);
+				System.out.println("Número de diferencias encontradas: " + errors);
+			}
 		} catch (IOException ex) {
 			System.out.println(ex.getMessage());
 			System.exit(-1);
@@ -169,6 +172,8 @@ public class VLIWSimulatorLite {
 		private int cacheMissPenalty = 5;
 		@Parameter(names ={"--cachemisssimul", "-cms"}, description = "Número de réplicas a lanzar cuando se pone un porcentaje de fallos de caché > 0", order = 5)
 		private int cacheMissSimul = 20;
+		@Parameter(names ={"--memfinal", "-mf"}, description = "Nombre del fichero de configuración de memoria y registros para comparar con el resultado final", order = 3)
+		private String cmpMemFileName = null;
 	}
 	
 }

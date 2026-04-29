@@ -111,6 +111,70 @@ public class VLIWMachine {
 	}
 
 	/**
+	 * Compara el contenido de memoria y registros con el contenido definido en un fichero que, al menos, debe tener 3 líneas con las cadenas
+	 * "#GPR", "#FPR" y "#MEM". Imprime por pantalla las diferencias encontradas.
+	 * @param fileName Nombre del fichero que define los contenidos de registros y memoria a comparar con el estado actual de la máquina
+	 * @throws FileNotFoundException Si el fichero indicado no existe
+	 * @throws SIMDEException Errores de ejecución, como intentar acceder a una dirección de memoria no válida. En este caso, se indicará el error por pantalla y se continuará con la comparación del resto de contenido.
+	 */
+	public int compareMemoryAndRegisters(String fileName) throws FileNotFoundException, SIMDEException {
+		int errors = 0;
+		final File memFile = new File(fileName);
+		Scanner scan;
+		int what = -1;
+		scan = new Scanner(memFile);
+		scan.useLocale(Locale.ENGLISH);
+		while (scan.hasNext()) {
+			final String text = scan.next();
+			if (GPRegisterBank.STR.equals(text)) {
+				what = 0;					
+			}
+			else if (FPRegisterBank.STR.equals(text)) {
+				what = 1;					
+			}
+			else if (Memory.STR.equals(text)) {
+				what = 2;					
+			}
+			else if (text.startsWith(STR_START_DIR)) {
+				int dir = Integer.parseInt(text.substring(1, text.length() - 1));
+				switch(what) {
+				case 0:
+					while (scan.hasNextInt()) {
+						int value = scan.nextInt();
+						if (gpr.read(dir++) != value) {
+							errors++;
+							System.out.println("Diferencia en GPR[" + (dir-1) + "]: " + gpr.read(dir-1) + " vs " + value);
+						}
+					}
+					break;
+				case 1:
+					while (scan.hasNextDouble()) {
+						double value = scan.nextDouble();
+						if (fpr.read(dir++) != value) {
+							errors++;
+							System.out.println("Diferencia en FPR[" + (dir-1) + "]: " + fpr.read(dir-1) + " vs " + value);
+						}
+					}
+					break;
+				case 2:
+					while (scan.hasNextDouble()) {
+						double value = scan.nextDouble();
+						if (mem.read(dir++) != value) {
+							errors++;
+							System.out.println("Diferencia en MEM[" + (dir-1) + "]: " + mem.read(dir-1) + " vs " + value);
+						}
+					}
+					break;
+				default:
+					break;
+				}
+			}
+		}
+		scan.close();
+		return errors;
+	}
+
+	/**
 	 * Imprime por pantalla el contenido de memoria y registros
 	 */
 	public void printMemoryAndRegisters() {

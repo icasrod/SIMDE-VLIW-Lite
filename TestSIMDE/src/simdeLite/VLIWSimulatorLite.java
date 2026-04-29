@@ -85,7 +85,8 @@ public class VLIWSimulatorLite {
 					  .addObject(args1)
 					  .build();
 			jc.parse(args);
-			
+			//args1.fileName = "c:/Users/icasrod/Downloads/APARTADO A.pla";
+			//args1.fileNameVLIW = "c:/Users/icasrod/Downloads/APARTADO B.vliw";
 			if(args1.cacheMissRate < 0 || args1.cacheMissRate > 100)
 				throw new ParameterException("ERROR: El porcentaje de fallos de cach� debe ser un n�mero entre 0 y 100. Usado: " + args1.cacheMissRate);
 			int []latencies = getLatencies(args1.latencies);

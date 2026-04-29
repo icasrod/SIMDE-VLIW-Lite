@@ -165,6 +165,12 @@ public class VLIWMachine {
 			values[0] = gpr.read(inst.getOp()[0]);
 			values[1] = gpr.read(inst.getOp()[1]);
 			break;
+		case BGTF:
+		case BEQF:
+		case BNEF:
+			values[0] = fpr.read(inst.getOp()[0]);
+			values[1] = fpr.read(inst.getOp()[1]);
+			break;
 		case LF:
 		case LW:
 			values[0] = inst.getOp()[1] + gpr.read(inst.getOp()[2]);
@@ -243,13 +249,38 @@ public class VLIWMachine {
 					throw new SIMDEException("Código de operación inesperado en la unidad de multiplicación entera: " + inst.getOpcode());
 				break;
 			case JUMP:
-				op1 = (int)op.getOperand1Value();
-				op2 = (int)op.getOperand2Value();
 				boolean cond = false;
 				switch (inst.getOpcode()) {
-				case BEQ: cond = (op1 == op2);	break;
-				case BGT: cond = (op1 > op2);	break;
-				case BNE: cond = (op1 != op2);	break;
+				case BEQ: 
+					op1 = (int)op.getOperand1Value();
+					op2 = (int)op.getOperand2Value();
+					cond = (op1 == op2);	
+					break;
+				case BGT: 
+					op1 = (int)op.getOperand1Value();
+					op2 = (int)op.getOperand2Value();
+					cond = (op1 > op2);	
+					break;
+				case BNE: 
+					op1 = (int)op.getOperand1Value();
+					op2 = (int)op.getOperand2Value();
+					cond = (op1 != op2);	
+					break;
+				case BEQF: 
+					opFP1 = op.getOperand1Value();
+					opFP2 = op.getOperand2Value();
+					cond = (opFP1 == opFP2);
+					break;
+				case BGTF: 
+					opFP1 = op.getOperand1Value();
+					opFP2 = op.getOperand2Value();
+					cond = (opFP1 > opFP2);
+					break;
+				case BNEF: 
+					opFP1 = op.getOperand1Value();
+					opFP2 = op.getOperand2Value();
+					cond = (opFP1 != opFP2);
+					break;
 				default:
 					throw new SIMDEException("Código de operación inesperado en la unidad de salto: " + inst.getOpcode());
 				}
